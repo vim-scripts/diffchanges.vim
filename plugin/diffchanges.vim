@@ -1,6 +1,7 @@
-" Shows the changes made to the current buffer in a diff format.
-" Last Modified: Mon 2008-02-18 04:03:51 (-0500)
+" Filename:      diffchanges.vim
+" Description:   Shows the changes made to the current buffer in a diff format
 " Maintainer:    Jeremy Cantrell <jmcantrell@gmail.com>
+" Last Modified: Sat 2008-02-23 03:58:24 (-0500)
 
 if exists("loaded_diffchanges")
 	finish
@@ -10,10 +11,18 @@ let loaded_diffchanges = 1
 
 let g:diffchanges = []
 
-command -bar DiffChanges :call DiffChanges()
-nmap <silent> <leader>dc :DiffChanges<cr>
+let s:save_cpo = &cpo
+set cpo&vim
 
-function DiffChanges() "{{{
+if !hasmapto('<Plug>DiffChangesToggle')
+	nmap <silent> <unique> <leader>dc <Plug>DiffChangesToggle
+endif
+
+nnoremap <unique> <script> <Plug>DiffChangesToggle <SID>DiffChangesToggle
+nnoremap <SID>DiffChangesToggle :DiffChangesToggle<cr>
+command -bar DiffChangesToggle :call DiffChangesToggle()
+
+function DiffChangesToggle() "{{{1
 	if len(expand('%')) == 0
 		return
 	endif
@@ -22,34 +31,37 @@ function DiffChanges() "{{{
 	else
 		call DiffChangesOn()
 	endif
-endfunction "}}}
-function DiffChangesOn() "{{{
+endfunction
+
+function DiffChangesOn() "{{{1
 	let filename = expand('%')
 	let diffname = tempname()
-	try
-		call writefile(readfile(filename, 'b'), diffname, 'b')
-		let b:diffchanges_savefdm = &fdm
-		diffthis
-		let buforig = bufnr('%')
-		vsplit
-		execute 'edit '.diffname
-		diffthis
-		let bufdiff = bufnr('%')
-		call add(g:diffchanges, [buforig, bufdiff])
-	endtry
-endfunction "}}}
-function DiffChangesOff() "{{{
+	call writefile(readfile(filename, 'b'), diffname, 'b')
+	let b:diffchanges_savefdm = &fdm
+	diffthis
+	let buforig = bufnr('%')
+	vsplit
+	execute 'edit '.diffname
+	diffthis
+	let bufdiff = bufnr('%')
+	call add(g:diffchanges, [buforig, bufdiff])
+endfunction
+
+function DiffChangesOff() "{{{1
 	let pair = DiffChangesPair(bufnr('%'))
 	execute 'bdelete! '.pair[1]
-	execute 'buffer '.pair[0]
+	execute bufwinnr(pair[0]).'wincmd w'
 	diffoff
 	let &fdm=b:diffchanges_savefdm
 	call remove(g:diffchanges, index(g:diffchanges, pair))
-endfunction "}}}
-function DiffChangesPair(buf_num) "{{{
+endfunction
+
+function DiffChangesPair(buf_num) "{{{1
 	for pair in g:diffchanges
 		if count(pair, a:buf_num) > 0
 			return pair
 		endif
 	endfor
-endfunction "}}}
+endfunction
+
+let &cpo = s:save_cpo

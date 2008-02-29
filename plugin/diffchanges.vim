@@ -1,7 +1,7 @@
 " Filename:      diffchanges.vim
 " Description:   Shows the changes made to the current buffer in a diff format
 " Maintainer:    Jeremy Cantrell <jmcantrell@gmail.com>
-" Last Modified: Fri 2008-02-29 10:48:44 (-0500)
+" Last Modified: Fri 2008-02-29 14:17:06 (-0500)
 
 if exists("loaded_diffchanges")
 	finish
@@ -42,7 +42,7 @@ command -bar DiffChangesPatchToggle :call s:DiffChangesToggle('patch')
 nnoremenu <script> &Plugin.&DiffChanges.&Diff\ Toggle  <SID>DiffChangesDiffToggle
 nnoremenu <script> &Plugin.&DiffChanges.&Patch\ Toggle <SID>DiffChangesPatchToggle
 
-function s:DiffChangesToggle(mode) "{{{1
+function! s:DiffChangesToggle(mode) "{{{1
 	if count(s:diffchanges_modes, a:mode) == 0
 		call s:Warn("Invalid mode '".a:mode."'")
 		return
@@ -59,7 +59,7 @@ function s:DiffChangesToggle(mode) "{{{1
 	endif
 endfunction
 
-function s:DiffChangesOn(mode) "{{{1
+function! s:DiffChangesOn(mode) "{{{1
 	if count(s:diffchanges_modes, a:mode) == 0
 		return
 	endif
@@ -99,7 +99,7 @@ function s:DiffChangesOn(mode) "{{{1
 	call add(g:diffchanges_{a:mode}, [buforig, bufdiff])
 endfunction
 
-function s:DiffChangesOff() "{{{1
+function! s:DiffChangesOff() "{{{1
 	let [dcm, pair] = s:DiffChangesPair(bufnr('%'))
 	execute 'autocmd! BufUnload <buffer='.pair[1].'>'
 	execute 'bdelete! '.pair[1]
@@ -113,7 +113,7 @@ function s:DiffChangesOff() "{{{1
 	call remove(dcp, index(dcp, pair))
 endfunction
 
-function s:DiffChangesPair(buf_num) "{{{1
+function! s:DiffChangesPair(buf_num) "{{{1
 	for dcm in s:diffchanges_modes
 		let pairs = g:diffchanges_{dcm}
 		for pair in pairs
@@ -125,11 +125,11 @@ function s:DiffChangesPair(buf_num) "{{{1
 	return [0, 0]
 endfunction
 
-function s:Warn(message) "{{{1
+function! s:Warn(message) "{{{1
 	echohl WarningMsg | echo a:message | echohl None
 endfunction
 
-function s:Error(message) "{{{1
+function! s:Error(message) "{{{1
 	echohl ErrorMsg | echo a:message | echohl None
 endfunction
 

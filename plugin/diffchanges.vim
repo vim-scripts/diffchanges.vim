@@ -1,7 +1,11 @@
 " Filename:      diffchanges.vim
 " Description:   Shows the changes made to the current buffer in a diff format
 " Maintainer:    Jeremy Cantrell <jmcantrell@gmail.com>
-" Last Modified: Fri 2008-02-29 14:17:06 (-0500)
+" Last Modified: Sat 2008-03-08 11:53:50 (-0500)
+
+if v:version < 700
+	finish
+endif
 
 if exists("loaded_diffchanges")
 	finish
@@ -17,11 +21,11 @@ if !exists('g:diffchanges_patch_cmd')
 	let g:diffchanges_patch_cmd = 'diff -u'
 endif
 
-" Save settings {{{1
 let s:save_cpo = &cpo
 set cpo&vim
 
-" Mappings {{{1
+" Mappings {{{
+
 if !hasmapto('<Plug>DiffChangesDiffToggle')
 	nmap <silent> <unique> <leader>dcd <Plug>DiffChangesDiffToggle
 endif
@@ -42,13 +46,13 @@ command -bar DiffChangesPatchToggle :call s:DiffChangesToggle('patch')
 nnoremenu <script> &Plugin.&DiffChanges.&Diff\ Toggle  <SID>DiffChangesDiffToggle
 nnoremenu <script> &Plugin.&DiffChanges.&Patch\ Toggle <SID>DiffChangesPatchToggle
 
-function! s:DiffChangesToggle(mode) "{{{1
+"}}}
+
+function s:DiffChangesToggle(mode) "{{{
 	if count(s:diffchanges_modes, a:mode) == 0
-		call s:Warn("Invalid mode '".a:mode."'")
 		return
 	endif
 	if len(expand('%')) == 0
-		call s:Warn("Unable to show changes for unsaved buffer")
 		return
 	endif
 	let [dcm, pair] = s:DiffChangesPair(bufnr('%'))
@@ -58,8 +62,8 @@ function! s:DiffChangesToggle(mode) "{{{1
 		call s:DiffChangesOff()
 	endif
 endfunction
-
-function! s:DiffChangesOn(mode) "{{{1
+"}}}
+function s:DiffChangesOn(mode) "{{{
 	if count(s:diffchanges_modes, a:mode) == 0
 		return
 	endif
@@ -69,51 +73,38 @@ function! s:DiffChangesOn(mode) "{{{1
 	if a:mode == 'diff'
 		call writefile(readfile(filename, 'b'), diffname, 'b')
 		let b:diffchanges_savefdm = &fdm
-		let b:diffchanges_savefdl = &fdl
 		let save_ft=&ft
 		diffthis
-		vert new
+		vsplit
+		execute 'edit '.diffname
 		let &ft=save_ft
-		execute '-read '.filename
 		diffthis
 		let bufdiff = bufnr('%')
 	elseif a:mode == 'patch'
-		execute 'silent w! '.diffname
-		let diff = system(g:diffchanges_patch_cmd.' '.filename.' '.diffname)
-		call delete(diffname)
-		if len(diff) == 0
-			call s:Warn('No changes found')
-			return
-		endif
-		below new
+		execute 'w! '.diffname
+		execute 'split '.filename.'.patch'
+		normal ggdG
 		setlocal filetype=diff
 		setlocal foldmethod=manual
-		silent 0put=diff
-		1
+		execute 'silent -r! '.g:diffchanges_patch_cmd.' '.filename.' '.diffname
 	endif
-	set buftype=nofile
-	let bufname = "Changes made to '".filename."'"
-	silent file `=bufname`
-	autocmd BufUnload <buffer> call s:DiffChangesOff()
 	let bufdiff = bufnr('%')
 	call add(g:diffchanges_{a:mode}, [buforig, bufdiff])
 endfunction
-
-function! s:DiffChangesOff() "{{{1
+"}}}
+function s:DiffChangesOff() "{{{
 	let [dcm, pair] = s:DiffChangesPair(bufnr('%'))
-	execute 'autocmd! BufUnload <buffer='.pair[1].'>'
 	execute 'bdelete! '.pair[1]
 	execute bufwinnr(pair[0]).'wincmd w'
 	if dcm == 'diff'
 		diffoff
-		let &fdm = b:diffchanges_savefdm
-		let &fdl = b:diffchanges_savefdl
+		let &fdm=b:diffchanges_savefdm
 	endif
 	let dcp = g:diffchanges_{dcm}
 	call remove(dcp, index(dcp, pair))
 endfunction
-
-function! s:DiffChangesPair(buf_num) "{{{1
+"}}}
+function s:DiffChangesPair(buf_num) "{{{
 	for dcm in s:diffchanges_modes
 		let pairs = g:diffchanges_{dcm}
 		for pair in pairs
@@ -124,14 +115,6 @@ function! s:DiffChangesPair(buf_num) "{{{1
 	endfor
 	return [0, 0]
 endfunction
+"}}}
 
-function! s:Warn(message) "{{{1
-	echohl WarningMsg | echo a:message | echohl None
-endfunction
-
-function! s:Error(message) "{{{1
-	echohl ErrorMsg | echo a:message | echohl None
-endfunction
-
-" Restore settings "{{{1
 let &cpo = s:save_cpo
